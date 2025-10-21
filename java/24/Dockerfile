@@ -30,8 +30,8 @@ RUN apt update -y \
         libappindicator3-1 \
         xdg-utils \
     && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' \
-    && apt update -y \
+# Removing [arch=amd64] allows apt to select the correct architecture for the current build platform
+&& sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' \    && apt update -y \
     && apt install -y google-chrome-stable \
     && CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+') \
     && wget -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip \
