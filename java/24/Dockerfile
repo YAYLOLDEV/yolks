@@ -1,43 +1,47 @@
+# Use the official Eclipse Temurin image with Java 24 JRE.
+# The --platform flag ensures the correct architecture is pulled for the build environment.
 FROM --platform=$TARGETOS/$TARGETARCH eclipse-temurin:24-jre
 
 LABEL author="Michael Parker" maintainer="parker@pterodactyl.io"
 LABEL org.opencontainers.image.source="https://github.com/pterodactyl/yolks"
 LABEL org.opencontainers.image.licenses=MIT
 
-# Install required packages + Chrome
-RUN apt update -y \
-    && apt install -y \
-        curl \
-        lsof \
-        ca-certificates \
-        openssl \
-        git \
-        tar \
-        sqlite3 \
-        fontconfig \
-        tzdata \
-        iproute2 \
-        libfreetype6 \
-        tini \
-        zip \
-        unzip \
-        jq \
-        wget \
-        unzip \
-        gnupg \
-        libnss3 \
-        libxss1 \
-        libappindicator3-1 \
-        xdg-utils \
-    && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
-# Removing [arch=amd64] allows apt to select the correct architecture for the current build platform
-&& sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' \    && apt update -y \
-    && apt install -y google-chrome-stable \
-    && CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+') \
-    && wget -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip \
-    && unzip /tmp/chromedriver.zip -d /usr/local/bin/ \
-    && chmod +x /usr/local/bin/chromedriver \
-    && rm -rf /var/lib/apt/lists/* /tmp/chromedriver.zip
+# Set non-interactive frontend for package installation to prevent prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install required packages, Chromium, and its driver.
+# We use Chromium because Google Chrome does not have an official ARM64 package.
+# This approach works for both AMD64 and ARM64 architectures.
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends \
+    # General utilities
+    curl \
+    lsof \
+    ca-certificates \
+    openssl \
+    git \
+    tar \
+    sqlite3 \
+    fontconfig \
+    tzdata \
+    iproute2 \
+    libfreetype6 \
+    tini \
+    zip \
+    unzip \
+    jq \
+    wget \
+    gnupg \
+    # Browser and driver
+    chromium \
+    chromium-driver \
+    # Required dependencies for browser environments
+    libnss3 \
+    libxss1 \
+    libappindicator3-1 \
+    xdg-utils \
+    # Clean up apt cache to reduce image size
+    && rm -rf /var/lib/apt/lists/*
 
 # Setup user and working directory
 RUN useradd -m -d /home/container -s /bin/bash container
